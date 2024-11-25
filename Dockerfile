@@ -19,7 +19,7 @@ RUN pnpm i
 
 # Add the rest of the application code
 ADD packages /app/packages
-RUN pnpm i
+# RUN pnpm i
 
 # Add the environment variables
 ADD scripts /app/scripts
