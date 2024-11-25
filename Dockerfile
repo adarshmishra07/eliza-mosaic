@@ -24,7 +24,7 @@ RUN pnpm i
 # Add the environment variables
 ADD scripts /app/scripts
 ADD characters /app/characters
-ADD .env /app/.env
+# ADD .env /app/.env
 
 # Command to run the container
 CMD ["tail", "-f", "/dev/null"]
