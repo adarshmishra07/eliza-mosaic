@@ -5,9 +5,11 @@ import {
     defaultCharacter,
 } from "@ai16z/eliza";
 
-const elizia = {
+const elizia = {};
+
+export const character: Character = {
+    ...defaultCharacter,
     name: "Mosaicv0",
-    clients: [],
     modelProvider: ModelProviderName.OPENAI,
     settings: {
         secrets: {},
@@ -93,11 +95,6 @@ const elizia = {
         "Engaging",
         "Creative",
     ],
-};
-
-export const character: Character = {
-    ...defaultCharacter,
-    ...elizia,
     clients: [Clients.TELEGRAM, Clients.DIRECT, Clients.TWITTER],
     // name: "Eliza",
     // plugins: [],
