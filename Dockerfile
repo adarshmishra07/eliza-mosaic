@@ -1,30 +1,39 @@
-FROM node:23.1.0
-# Install pnpm globally
-RUN npm install -g pnpm@9.4.0
+# Use Node.js Latest 23
+FROM node:23-slim
 
-# Set the working directory
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    git \
+    bash \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install pnpm globally
+RUN npm install -g pnpm@9.12.3
+
+# Set working directory
 WORKDIR /app
 
-# Add configuration files and install dependencies
-ADD pnpm-workspace.yaml /app/pnpm-workspace.yaml
-ADD package.json /app/package.json
-ADD .npmrc /app/.npmrc
-ADD tsconfig.json /app/tsconfig.json
-ADD pnpm-lock.yaml /app/pnpm-lock.yaml
-RUN pnpm i
+# First layer: base configuration
+COPY pnpm-workspace.yaml ./
+COPY package.json ./
+COPY .npmrc ./
+COPY tsconfig.json ./
+COPY pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
-# Add the documentation
-ADD docs /app/docs
-RUN pnpm i
+# Copy the entire project
+COPY . .
 
-# Add the rest of the application code
-ADD packages /app/packages
-RUN pnpm i
+# Make build script executable and build
+RUN chmod +x scripts/build.sh && \
+    cd packages/core && pnpm build && cd ../.. && \
+    pnpm run build
 
-# Add the environment variables
-ADD scripts /app/scripts
-ADD characters /app/characters
-# ADD .env /app/.env
+# Expose necessary port
+EXPOSE 3000
 
-# Command to run the container
-CMD ["tail", "-f", "/dev/null"]
+# Start the application
+CMD ["pnpm", "start:all"]
