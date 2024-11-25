@@ -15,5 +15,4 @@ RUN pnpm install
 # Ensure the start script has execute permissions
 RUN chmod +x scripts/start.sh
 
-# Start the application
-CMD ["sh", "scripts/start.sh"]
+
