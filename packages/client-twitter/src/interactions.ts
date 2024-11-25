@@ -55,32 +55,45 @@ Thread of Tweets You Are Replying To:
 {{currentPost}}
 ` + messageCompletionFooter;
 
-export const twitterShouldRespondTemplate =
-    `# INSTRUCTIONS: Determine if {{agentName}} (@{{twitterUserName}}) should respond to the message and participate in the conversation. Do not comment. Just respond with "true" or "false".
+export const twitterShouldRespondTemplate = `# INSTRUCTIONS: Determine if {{agentName}} (@{{twitterUserName}}) should respond to the message and participate in the conversation. Do not comment. Just respond with "true" or "false".
 
-Response options are RESPOND, IGNORE and STOP .
+Response options are RESPOND, IGNORE and STOP.
 
-{{agentName}} should respond to messages that are directed at them, or participate in conversations that are interesting or relevant to their background, IGNORE messages that are irrelevant to them, and should STOP if the conversation is concluded.
+{{agentName}} is an AI passionate about Polygon blockchain, web3, and blockchain technology. The bot aims to be helpful and engaging in the crypto/blockchain community.
 
-{{agentName}} is in a room with other users and wants to be conversational, but not annoying.
-{{agentName}} should RESPOND to messages that are directed at them, or participate in conversations that are interesting or relevant to their background.
-If a message is not interesting or relevant, {{agentName}} should IGNORE.
-Unless directly RESPONDing to a user, {{agentName}} should IGNORE messages that are very short or do not contain much information.
-If a user asks {{agentName}} to stop talking, {{agentName}} should STOP.
-If {{agentName}} concludes a conversation and isn't part of the conversation anymore, {{agentName}} should STOP.
+RESPOND in these cases:
+- ANY mention of Polygon, MATIC, blockchain, crypto, web3, or related technologies
+- Questions about development, smart contracts, or technical aspects
+- Discussions about DeFi, NFTs, or blockchain applications
+- Market analysis or ecosystem updates related to blockchain
+- Someone asking for help or information about blockchain/crypto
+- Direct mentions of @{{twitterUserName}}
+- Technical discussions in threads {{agentName}} is part of
+- Questions about gas fees, transactions, or network performance
+- Mentions of other blockchain platforms (to provide Polygon perspective)
+- Discussions about blockchain scaling, zkEVM, or Layer 2 solutions
+
+IGNORE only if:
+- Tweet contains excessive spam (more than 3 hashtags and promotional links)
+- Tweet is completely unrelated to blockchain/crypto
+- Tweet contains inappropriate or harmful content
+- Tweet is pure price speculation without technical substance
+
+STOP only if:
+- User explicitly asks the bot to stop responding
+- Conversation has naturally concluded with a clear resolution
+- User becomes hostile or inappropriate
 
 {{recentPosts}}
 
-IMPORTANT: {{agentName}} (aka @{{twitterUserName}}) is particularly sensitive about being annoying, so if there is any doubt, it is better to IGNORE than to RESPOND.
-
+Current Post:
 {{currentPost}}
 
 Thread of Tweets You Are Replying To:
-
 {{formattedConversation}}
 
-# INSTRUCTIONS: Respond with [RESPOND] if {{agentName}} should respond, or [IGNORE] if {{agentName}} should not respond to the last message and [STOP] if {{agentName}} should stop participating in the conversation.
-` + shouldRespondFooter;
+# INSTRUCTIONS: Respond with [RESPOND] if {{agentName}} should engage with this content, [IGNORE] if completely unrelated to blockchain/crypto, or [STOP] if the conversation should end.
+`;
 
 export class TwitterInteractionClient {
     client: ClientBase;
@@ -96,8 +109,8 @@ export class TwitterInteractionClient {
             this.handleTwitterInteractions();
             setTimeout(
                 handleTwitterInteractionsLoop,
-                (Math.floor(Math.random() * (5 - 2 + 1)) + 2) * 60 * 1000
-            ); // Random interval between 2-5 minutes
+                (Math.floor(Math.random() * (3 - 1 + 1)) + 2) * 60 * 1000
+            ); // Random interval between 1-3 minutes
         };
         handleTwitterInteractionsLoop();
     }
@@ -298,6 +311,9 @@ export class TwitterInteractionClient {
             modelClass: ModelClass.MEDIUM,
         });
 
+        elizaLogger.debug("Should respond context:", shouldRespondContext);
+        elizaLogger.debug("Should respond output:", shouldRespond);
+
         // Promise<"RESPOND" | "IGNORE" | "STOP" | null> {
         if (shouldRespond !== "RESPOND") {
             elizaLogger.log("Not responding to message");
@@ -320,6 +336,7 @@ export class TwitterInteractionClient {
             context,
             modelClass: ModelClass.MEDIUM,
         });
+        elizaLogger.debug("Generated response:", response.text);
 
         const removeQuotes = (str: string) =>
             str.replace(/^['"](.*)['"]$/, "$1");
@@ -340,6 +357,8 @@ export class TwitterInteractionClient {
                         this.runtime.getSetting("TWITTER_USERNAME"),
                         tweet.id
                     );
+                    elizaLogger.log(`Sending reply to tweet ID: ${tweet.id}`);
+
                     return memories;
                 };
 

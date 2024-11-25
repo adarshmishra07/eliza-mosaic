@@ -40,3 +40,4 @@ characters/
 packages/core/src/providers/cache
 packages/core/src/providers/cache/*
 cache/*
+.env.local
