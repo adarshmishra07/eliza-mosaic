@@ -1,4 +1,5 @@
 FROM node:23.1.0
+
 # Install pnpm globally
 RUN npm install -g pnpm@9.4.0
 
@@ -6,25 +7,21 @@ RUN npm install -g pnpm@9.4.0
 WORKDIR /app
 
 # Add configuration files and install dependencies
-ADD pnpm-workspace.yaml /app/pnpm-workspace.yaml
-ADD package.json /app/package.json
-ADD .npmrc /app/.npmrc
-ADD tsconfig.json /app/tsconfig.json
-ADD pnpm-lock.yaml /app/pnpm-lock.yaml
-RUN pnpm i
+COPY pnpm-workspace.yaml package.json .npmrc tsconfig.json pnpm-lock.yaml ./
+RUN pnpm install
 
 # Add the documentation
-ADD docs /app/docs
-RUN pnpm i
+COPY docs ./docs
 
 # Add the rest of the application code
-ADD packages /app/packages
-RUN pnpm i
+COPY packages ./packages
 
-# Add the environment variables
-ADD scripts /app/scripts
-ADD characters /app/characters
-# ADD .env /app/.env
+# Add scripts and other necessary files
+COPY scripts ./scripts
+COPY characters ./characters
 
-# Command to run the container
-CMD ["tail", "-f", "/dev/null"]
+# Ensure the start script has execute permissions
+RUN chmod +x scripts/start.sh
+
+# Set the command to run the start script
+CMD ["sh", "scripts/start.sh"]
