@@ -1,33 +1,30 @@
-# Use Node.js 22
-FROM node:22-slim
+FROM node:23.1.0
+# Install pnpm globally
+RUN npm install -g pnpm@9.4.0
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    python3 \
-    make \
-    g++ \
-    git \
-    bash \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install specific pnpm version
-RUN npm install -g pnpm@9.12.3
-
-# Set working directory
+# Set the working directory
 WORKDIR /app
 
-# Copy package files first for better caching
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY packages/*/package.json ./packages/
+# Add configuration files and install dependencies
+ADD pnpm-workspace.yaml /app/pnpm-workspace.yaml
+ADD package.json /app/package.json
+ADD .npmrc /app/.npmrc
+ADD tsconfig.json /app/tsconfig.json
+ADD pnpm-lock.yaml /app/pnpm-lock.yaml
+RUN pnpm i
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
+# Add the documentation
+ADD docs /app/docs
+RUN pnpm i
 
-# Copy the rest of the application
-COPY . .
+# Add the rest of the application code
+ADD packages /app/packages
+RUN pnpm i
 
-# Build the application
-RUN pnpm run build
+# Add the environment variables
+ADD scripts /app/scripts
+ADD characters /app/characters
+# ADD .env /app/.env
 
-# The default command uses the start:all script
-CMD ["pnpm", "start:all"]
+# Command to run the container
+CMD ["tail", "-f", "/dev/null"]
