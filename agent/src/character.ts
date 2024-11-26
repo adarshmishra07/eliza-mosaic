@@ -95,7 +95,7 @@ export const character: Character = {
         "Engaging",
         "Creative",
     ],
-    clients: [Clients.TELEGRAM, Clients.DIRECT],
+    clients: [Clients.TELEGRAM, Clients.TWITTER, Clients.DIRECT],
     // name: "Eliza",
     // plugins: [],
     // clients: [],
