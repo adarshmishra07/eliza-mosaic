@@ -72,27 +72,37 @@ export class TwitterPostClient {
         }
 
         const generateNewTweetLoop = async () => {
-            const lastPost = await this.runtime.cacheManager.get<{
-                timestamp: number;
-            }>(
-                "twitter/" +
-                    this.runtime.getSetting("TWITTER_USERNAME") +
-                    "/lastPost"
-            );
+            try {
+                const lastPost = await this.runtime.cacheManager.get<{
+                    timestamp: number;
+                }>(
+                    "twitter/" +
+                        this.runtime.getSetting("TWITTER_USERNAME") +
+                        "/lastPost"
+                );
 
-            const lastPostTimestamp = lastPost?.timestamp ?? 0;
+                const lastPostTimestamp = lastPost?.timestamp ?? 0;
+                const delay = 30 * 60 * 1000; // 30 minutes in milliseconds
+                const now = Date.now();
+                let remainingTime;
+                if (now > lastPostTimestamp + delay) {
+                    await this.generateNewTweet();
+                    // Schedule next check exactly 30 minutes after this tweet
+                    setTimeout(generateNewTweetLoop, delay);
+                } else {
+                    // If too early, schedule next check for the remaining time
+                    remainingTime = lastPostTimestamp + delay - now;
+                    setTimeout(generateNewTweetLoop, remainingTime);
+                }
 
-            const delay = 30 * 60 * 1000;
-
-            if (Date.now() > lastPostTimestamp + delay) {
-                await this.generateNewTweet();
+                elizaLogger.log(
+                    `Next tweet check scheduled in ${Math.floor(remainingTime / 60000)} minutes`
+                );
+            } catch (error) {
+                elizaLogger.error("Error in tweet loop:", error);
+                // On error, retry after 1 minute
+                setTimeout(generateNewTweetLoop, 60000);
             }
-
-            setTimeout(() => {
-                generateNewTweetLoop(); // Set up next iteration
-            }, delay);
-
-            elizaLogger.log(`Next tweet scheduled in ${30} minutes`);
         };
 
         if (postImmediately) {
