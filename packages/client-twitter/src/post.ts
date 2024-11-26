@@ -8,7 +8,7 @@ import {
     stringToUuid,
 } from "@ai16z/eliza";
 import { elizaLogger } from "@ai16z/eliza";
-import { ClientBase } from "./base";
+import { ClientBase } from "./base.ts";
 
 const twitterPostTemplate = `{{timeline}}
 
@@ -65,7 +65,6 @@ function truncateToCompleteSentence(text: string): string {
 export class TwitterPostClient {
     client: ClientBase;
     runtime: IAgentRuntime;
-    private static readonly THIRTY_MINUTES = 30 * 60 * 1000; // 30 minutes in milliseconds
 
     async start(postImmediately: boolean = false) {
         if (!this.client.profile) {
@@ -82,7 +81,14 @@ export class TwitterPostClient {
             );
 
             const lastPostTimestamp = lastPost?.timestamp ?? 0;
-            const delay = TwitterPostClient.THIRTY_MINUTES; // Fixed 30 minute delay
+            const minMinutes =
+                parseInt(this.runtime.getSetting("POST_INTERVAL_MIN")) || 90;
+            const maxMinutes =
+                parseInt(this.runtime.getSetting("POST_INTERVAL_MAX")) || 180;
+            const randomMinutes =
+                Math.floor(Math.random() * (maxMinutes - minMinutes + 1)) +
+                minMinutes;
+            const delay = randomMinutes * 60 * 1000;
 
             if (Date.now() > lastPostTimestamp + delay) {
                 await this.generateNewTweet();
@@ -92,7 +98,7 @@ export class TwitterPostClient {
                 generateNewTweetLoop(); // Set up next iteration
             }, delay);
 
-            elizaLogger.log(`Next tweet scheduled in 30 minutes`);
+            elizaLogger.log(`Next tweet scheduled in ${randomMinutes} minutes`);
         };
 
         if (postImmediately) {
@@ -121,6 +127,8 @@ export class TwitterPostClient {
             let homeTimeline: Tweet[] = [];
 
             const cachedTimeline = await this.client.getCachedTimeline();
+
+            // console.log({ cachedTimeline });
 
             if (cachedTimeline) {
                 homeTimeline = cachedTimeline;
@@ -194,6 +202,7 @@ export class TwitterPostClient {
                 const body = await result.json();
                 const tweetResult = body.data.create_tweet.tweet_results.result;
 
+                // console.dir({ tweetResult }, { depth: Infinity });
                 const tweet = {
                     id: tweetResult.rest_id,
                     name: this.client.profile.screenName,
